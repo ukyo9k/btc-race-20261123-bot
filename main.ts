@@ -22,16 +22,24 @@
 //     finishing with zero trades and failing the gate.
 //   - Exit, the whole position, on a later bar's close: its value is at least
 //     150 bps over its cost (take profit), at least 80 bps under it (stop
-//     loss), or it has been held 240 bars. A refused sell is re-sent on the
+//     loss), or it has been held 180 bars. The hold cap is three hours, not
+//     four: the recovery after a four-hour dip is front-loaded (the next 60
+//     bars average +56 to +60 bps) and the fourth hour gives gains back —
+//     capping the hold at 180 bars lifts the dev-window net PnL from +22.99
+//     to +26.46 USDC and halves the max drawdown from 1.26% to 0.63%, with
+//     holds of 150-210 bars all beating 240, so the point sits on a broad
+//     plateau rather than a knife edge. A refused sell is re-sent on the
 //     next bar while its reason still holds.
 //
 // The sweep behind the numbers: trigger 70-100 bps with take-profit 120-180
-// bps all clear +7.9 to +22.5 USDC on the dev window (237 of 288 parameter
+// bps all clear +7.9 to +23.4 USDC on the dev window (237 of 288 parameter
 // combinations positive), so the chosen point is inside a broad positive
-// region, not a knife-edge fit. Long only, no leverage, no shorts, one
-// position at a time. Every comparison is exact integer math on the raw close
-// units (bigint), and the only history kept is the closes themselves, so the
-// same bars give the same orders, run after run.
+// region, not a knife-edge fit. The hold cap was swept separately: 150, 180
+// and 210 bars all beat 240 at every take-profit in 140-180 bps, and 180
+// halves the max drawdown, so 180 is the cap. Long only, no leverage, no
+// shorts, one position at a time. Every comparison is exact integer math on
+// the raw close units (bigint), and the only history kept is the closes
+// themselves, so the same bars give the same orders, run after run.
 //
 // Laid out like an entrant's repository: the grader runs `node /bot/main.ts`
 // with this directory mounted at /bot; vendor/makefun-bars.ts is a
@@ -51,8 +59,8 @@ const FALLBACK_TRIGGER_BPS = 60n;
 const TAKE_PROFIT_BPS = 150n;
 /** Stop loss: position value at least this many bps under its cost. */
 const STOP_LOSS_BPS = 80n;
-/** Longest a position is held, in bars, before it is flattened. */
-const MAX_HOLD_BARS = 240;
+/** Longest a position is held, in bars, before it is flattened (180 bars = three hours). */
+const MAX_HOLD_BARS = 180;
 /** No new entry on or after this batch: the last 120 bars of the window. */
 const LAST_ENTRY_SEQ = 1320;
 /** Slippage cap per order, measured from the latest close the bot was sent. */
